@@ -9,35 +9,39 @@
 <body>
   <header>
     <h1>crime_scene</h1>
-    <p>Create basic scene diagrams, place evidence markers, and export your work.</p>
+    <p>Diagram scenes with flexible wall tools, snapping, and wall properties.</p>
   </header>
 
-  <main>
-    <aside class="panel">
-      <h2>Tools</h2>
-      <div class="tool-group">
-        <button data-tool="select" class="tool active">Select</button>
-        <button data-tool="wall" class="tool">Wall</button>
-        <button data-tool="evidence" class="tool">Evidence</button>
-        <button data-tool="measure" class="tool">Measure</button>
-      </div>
+  <nav class="top-toolbar" aria-label="Main toolbar">
+    <div class="tool-group-row">
+      <span class="group-title">Selection Tools</span>
+      <button data-tool="select" class="tool-btn active">Select</button>
+    </div>
 
-      <section class="wall-settings" aria-label="Wall settings">
-        <h2>Wall Settings</h2>
-        <label>
-          Wall Mode
-          <select id="wallMode">
-            <option value="orthogonal">90° walls</option>
-            <option value="free">Free draw walls</option>
-            <option value="snap" selected>Snap to grid + walls</option>
-          </select>
-        </label>
-        <div class="wall-help">Tip: choose a mode before placing wall start/end points.</div>
-      </section>
+    <div class="tool-group-row">
+      <span class="group-title">Wall Tools</span>
+      <button data-wall-tool="free" class="wall-tool-btn active">Free Wall</button>
+      <button data-wall-tool="straight" class="wall-tool-btn">Straight Wall</button>
+      <button data-wall-tool="room" class="wall-tool-btn">Rectangle Room</button>
+      <button data-tool="wall" class="tool-btn">Draw Wall</button>
+    </div>
 
-      <h2>Scene Scale</h2>
+    <div class="tool-group-row">
+      <span class="group-title">Snap Toggles</span>
+      <button id="toggleSnapGrid" class="toggle-btn">Snap Grid: ON</button>
+      <button id="toggleSnapWalls" class="toggle-btn">Snap Walls: ON</button>
+      <button id="toggleOrtho" class="toggle-btn">Ortho: OFF</button>
+    </div>
+
+    <div class="tool-group-row">
+      <span class="group-title">Measurement Tools</span>
+      <button data-tool="measure" class="tool-btn">Measure</button>
+    </div>
+
+    <div class="tool-group-row">
+      <span class="group-title">Scene Settings</span>
       <label>
-        Scale Preset
+        Scale
         <select id="scalePreset">
           <option value="6in">1 sq = 6 inches</option>
           <option value="1ft" selected>1 sq = 1 foot</option>
@@ -46,28 +50,47 @@
         </select>
       </label>
       <div id="customScaleWrap" class="inline-row hidden">
-        <label>
-          Custom value
-          <input id="customScaleValue" type="number" min="0.1" step="0.1" value="1" />
-        </label>
-        <label>
-          Unit
-          <select id="customScaleUnit">
-            <option value="in">inches</option>
-            <option value="ft" selected>feet</option>
-          </select>
-        </label>
+        <input id="customScaleValue" type="number" min="0.1" step="0.1" value="1" />
+        <select id="customScaleUnit">
+          <option value="in">inches</option>
+          <option value="ft" selected>feet</option>
+        </select>
       </div>
       <div id="scaleSummary" class="scale-summary">Current: 1 sq = 1 foot</div>
+    </div>
+  </nav>
 
+  <main>
+    <aside class="panel">
       <h2>Case Info</h2>
       <label>Case Number <input id="caseNumber" placeholder="2026-001" /></label>
       <label>Scene Name <input id="sceneName" placeholder="Living Room" /></label>
 
       <h2>Selected Evidence</h2>
       <label>Evidence ID <input id="evidenceId" placeholder="E-01" /></label>
-      <label>Notes <textarea id="evidenceNotes" rows="4" placeholder="Description..."></textarea></label>
-      <button id="saveEvidence">Save Evidence Details</button>
+      <label>Notes <textarea id="evidenceNotes" rows="3" placeholder="Description..."></textarea></label>
+      <button id="saveEvidence">Save Evidence</button>
+
+      <h2>Wall Properties</h2>
+      <div id="wallPropertiesEmpty" class="muted">Select a wall to edit properties.</div>
+      <div id="wallPropertiesPanel" class="hidden">
+        <label>Length <input id="wallLength" readonly /></label>
+        <label>Angle <input id="wallAngle" readonly /></label>
+        <label>Thickness (px) <input id="wallThickness" type="number" min="1" value="4" /></label>
+        <label>Label <input id="wallLabel" placeholder="W1" /></label>
+        <label>
+          Type
+          <select id="wallType">
+            <option value="interior">Interior</option>
+            <option value="exterior">Exterior</option>
+          </select>
+        </label>
+        <button id="saveWallProperties">Save Wall Properties</button>
+      </div>
+
+      <h2>Offset / Parallel Wall</h2>
+      <label>Offset distance (scene units) <input id="offsetDistance" type="number" min="0.1" step="0.1" value="12" /></label>
+      <button id="createOffsetWall">Create Parallel Wall from Selected</button>
 
       <h2>Export</h2>
       <button id="exportJson">Export JSON</button>
@@ -76,7 +99,7 @@
     </aside>
 
     <section class="canvas-wrap">
-      <canvas id="sceneCanvas" width="1100" height="700" aria-label="Crime scene diagram canvas"></canvas>
+      <canvas id="sceneCanvas" width="1200" height="760" aria-label="Crime scene diagram canvas"></canvas>
       <div id="status">Tool: Select</div>
     </section>
   </main>
