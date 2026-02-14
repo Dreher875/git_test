@@ -3,23 +3,20 @@
 This repository contains the **crime_scene** desktop application for crime scene diagramming, built with Electron.
 
 ## Features
-- Ribbon-style top interface with tabs:
-  - FILE
-  - DRAW
-  - MEASURE
-  - VIEW
-  - EVIDENCE
-  - MANAGE
-- Each tab contains grouped icon buttons with text labels under SVG icons.
-- Hover tooltips on toolbar controls.
-- Active tool highlighting.
-- Primary tool workflow with Select / Wall / Room / Measure / Evidence.
-- Wall dropdown modes: Free Wall and Straight Wall.
-- Independent snap toggles: Snap Grid, Snap Walls, Ortho.
-- Undo/Redo support (buttons + Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z).
-- Press **Escape** to deselect the current tool.
-- Wall properties panel and offset/parallel wall tool.
-- Scene scale presets and export controls.
+- Ribbon-style top interface with tabs: FILE, DRAW, MEASURE, VIEW, EVIDENCE, MANAGE.
+- Grouped ribbon tools with SVG icons, text labels, active highlighting, and hover tooltips.
+- Furniture sprite system loaded from local `assets/sprites/` SVG files.
+- Furniture placement mode from DRAW → Furniture group.
+- Furniture selection, move, resize (aspect-locked by default), and rotation handles.
+- Furniture rendering order: above walls, below measurement guides.
+- Wall drawing, room tool, measurement tools, snap toggles, undo/redo, and export controls.
+
+## Furniture sprites
+- `assets/sprites/sofa.svg`
+- `assets/sprites/bed.svg`
+- `assets/sprites/chair.svg`
+- `assets/sprites/table_rect.svg`
+- `assets/sprites/table_round.svg`
 
 ## Run as a desktop app
 

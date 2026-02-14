@@ -60,3 +60,7 @@ button.active { border-color: #2563eb; background: #dbeafe; }
 
 .toggle-on { border-color: #16a34a; background: #dcfce7; }
 .toggle-off { border-color: #a1a1aa; background: #f4f4f5; }
+
+.group-stack { display: flex; flex-direction: column; gap: 0.25rem; }
+.group-row { display: flex; gap: 0.3rem; }
+.group-title { font-size: 0.7rem; color: #334155; font-weight: 700; }
