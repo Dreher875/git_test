@@ -10,11 +10,14 @@ const customScaleWrap = document.getElementById('customScaleWrap');
 const customScaleValueInput = document.getElementById('customScaleValue');
 const customScaleUnitSelect = document.getElementById('customScaleUnit');
 const scaleSummaryEl = document.getElementById('scaleSummary');
+const wallModeSelect = document.getElementById('wallMode');
 
 const GRID_SIZE_PX = 24;
+const SNAP_THRESHOLD_PX = 14;
 
 const state = {
   tool: 'select',
+  wallMode: 'snap',
   walls: [],
   evidence: [],
   measurements: [],
@@ -39,6 +42,12 @@ function setTool(tool) {
 
 toolButtons.forEach((btn) => {
   btn.addEventListener('click', () => setTool(btn.dataset.tool));
+});
+
+wallModeSelect.addEventListener('change', () => {
+  state.wallMode = wallModeSelect.value;
+  statusEl.textContent = `Wall mode: ${wallModeSelect.options[wallModeSelect.selectedIndex].text}`;
+  draw();
 });
 
 function unitLabel(unit, value) {
@@ -90,6 +99,81 @@ function snapToGrid(point) {
     x: Math.round(point.x / GRID_SIZE_PX) * GRID_SIZE_PX,
     y: Math.round(point.y / GRID_SIZE_PX) * GRID_SIZE_PX,
   };
+}
+
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function closestPointOnSegment(point, line) {
+  const ax = line.x1;
+  const ay = line.y1;
+  const bx = line.x2;
+  const by = line.y2;
+  const abx = bx - ax;
+  const aby = by - ay;
+  const lenSq = abx * abx + aby * aby;
+  if (lenSq === 0) return { x: ax, y: ay };
+
+  const t = ((point.x - ax) * abx + (point.y - ay) * aby) / lenSq;
+  const clamped = Math.max(0, Math.min(1, t));
+  return { x: ax + abx * clamped, y: ay + aby * clamped };
+}
+
+function snapToWalls(point) {
+  if (!state.walls.length) {
+    return point;
+  }
+
+  let bestPoint = point;
+  let bestDistance = SNAP_THRESHOLD_PX;
+
+  state.walls.forEach((line) => {
+    const endpoints = [
+      { x: line.x1, y: line.y1 },
+      { x: line.x2, y: line.y2 },
+    ];
+
+    endpoints.forEach((ep) => {
+      const d = distance(point, ep);
+      if (d < bestDistance) {
+        bestDistance = d;
+        bestPoint = ep;
+      }
+    });
+
+    const projected = closestPointOnSegment(point, line);
+    const pd = distance(point, projected);
+    if (pd < bestDistance) {
+      bestDistance = pd;
+      bestPoint = projected;
+    }
+  });
+
+  return bestPoint;
+}
+
+function getWallPlacementPoint(rawPoint, startPoint = null) {
+  if (state.wallMode === 'free') {
+    return rawPoint;
+  }
+
+  if (state.wallMode === 'orthogonal') {
+    if (!startPoint) {
+      return snapToGrid(rawPoint);
+    }
+
+    const dx = Math.abs(rawPoint.x - startPoint.x);
+    const dy = Math.abs(rawPoint.y - startPoint.y);
+    const constrained = dx >= dy
+      ? { x: rawPoint.x, y: startPoint.y }
+      : { x: startPoint.x, y: rawPoint.y };
+    return snapToGrid(constrained);
+  }
+
+  // snap mode: snap to grid first, then nearby wall endpoints/segments
+  const gridSnapped = snapToGrid(rawPoint);
+  return snapToWalls(gridSnapped);
 }
 
 function formatDistance(pixelDistance) {
@@ -188,18 +272,25 @@ function evidenceAt(x, y) {
 }
 
 canvas.addEventListener('mousemove', (event) => {
-  if ((state.tool !== 'wall' && state.tool !== 'measure') || !state.startPoint) {
+  const raw = getMousePos(event);
+
+  if (state.tool === 'wall' && state.startPoint) {
+    state.previewPoint = getWallPlacementPoint(raw, state.startPoint);
+    draw();
     return;
   }
 
-  state.previewPoint = snapToGrid(getMousePos(event));
-  draw();
+  if (state.tool === 'measure' && state.startPoint) {
+    state.previewPoint = snapToGrid(raw);
+    draw();
+  }
 });
 
 canvas.addEventListener('click', (event) => {
-  const snapped = snapToGrid(getMousePos(event));
+  const raw = getMousePos(event);
 
   if (state.tool === 'evidence') {
+    const snapped = snapToGrid(raw);
     state.evidence.push({ x: snapped.x, y: snapped.y, id: `E-${String(state.evidence.length + 1).padStart(2, '0')}`, notes: '' });
     state.selectedEvidenceIndex = state.evidence.length - 1;
     const selected = state.evidence[state.selectedEvidenceIndex];
@@ -210,7 +301,7 @@ canvas.addEventListener('click', (event) => {
   }
 
   if (state.tool === 'select') {
-    state.selectedEvidenceIndex = evidenceAt(snapped.x, snapped.y);
+    state.selectedEvidenceIndex = evidenceAt(raw.x, raw.y);
     if (state.selectedEvidenceIndex >= 0) {
       const selected = state.evidence[state.selectedEvidenceIndex];
       evidenceIdInput.value = selected.id;
@@ -225,28 +316,42 @@ canvas.addEventListener('click', (event) => {
     return;
   }
 
-  if (state.tool === 'wall' || state.tool === 'measure') {
+  if (state.tool === 'wall') {
     if (!state.startPoint) {
-      state.startPoint = snapped;
-      state.previewPoint = snapped;
-      statusEl.textContent = `Tool: ${state.tool} (pick end point)`;
+      state.startPoint = getWallPlacementPoint(raw);
+      state.previewPoint = state.startPoint;
+      statusEl.textContent = 'Tool: wall (pick end point)';
       draw();
       return;
     }
 
-    if (state.tool === 'wall') {
-      addSegment(state.walls, state.startPoint, snapped);
-    } else {
-      const d = Math.hypot(snapped.x - state.startPoint.x, snapped.y - state.startPoint.y);
-      addSegment(state.measurements, state.startPoint, snapped, {
-        distancePx: d,
-        label: formatDistance(d),
-      });
+    const endPoint = getWallPlacementPoint(raw, state.startPoint);
+    addSegment(state.walls, state.startPoint, endPoint);
+    state.startPoint = null;
+    state.previewPoint = null;
+    statusEl.textContent = 'Tool: Wall';
+    return;
+  }
+
+  if (state.tool === 'measure') {
+    const snapped = snapToGrid(raw);
+    if (!state.startPoint) {
+      state.startPoint = snapped;
+      state.previewPoint = snapped;
+      statusEl.textContent = 'Tool: measure (pick end point)';
+      draw();
+      return;
     }
+
+    const d = Math.hypot(snapped.x - state.startPoint.x, snapped.y - state.startPoint.y);
+    addSegment(state.measurements, state.startPoint, snapped, {
+      distancePx: d,
+      label: formatDistance(d),
+    });
 
     state.startPoint = null;
     state.previewPoint = null;
-    statusEl.textContent = `Tool: ${state.tool[0].toUpperCase()}${state.tool.slice(1)}`;
+    statusEl.textContent = 'Tool: Measure';
   }
 });
 
@@ -286,6 +391,7 @@ document.getElementById('exportJson').addEventListener('click', () => {
       unit: state.scale.unit,
       label: state.scale.label,
     },
+    wallMode: state.wallMode,
     walls: state.walls,
     measurements: state.measurements,
     evidence: state.evidence,
