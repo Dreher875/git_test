@@ -7,6 +7,7 @@ This repository contains the **crime_scene** desktop application for crime scene
 - Place evidence markers
 - Add/update evidence IDs and notes
 - Measure distances between two points
+- Scene scale settings (1 sq = 6 inches, 1 foot, 2 feet, or custom)
 - Export the current scene as JSON
 - Export the diagram canvas as PNG
 

@@ -5,6 +5,13 @@ const toolButtons = [...document.querySelectorAll('.tool')];
 const statusEl = document.getElementById('status');
 const evidenceIdInput = document.getElementById('evidenceId');
 const evidenceNotesInput = document.getElementById('evidenceNotes');
+const scalePresetSelect = document.getElementById('scalePreset');
+const customScaleWrap = document.getElementById('customScaleWrap');
+const customScaleValueInput = document.getElementById('customScaleValue');
+const customScaleUnitSelect = document.getElementById('customScaleUnit');
+const scaleSummaryEl = document.getElementById('scaleSummary');
+
+const GRID_SIZE_PX = 24;
 
 const state = {
   tool: 'select',
@@ -14,6 +21,11 @@ const state = {
   startPoint: null,
   previewPoint: null,
   selectedEvidenceIndex: -1,
+  scale: {
+    value: 1,
+    unit: 'ft',
+    label: '1 sq = 1 foot',
+  },
 };
 
 function setTool(tool) {
@@ -22,11 +34,48 @@ function setTool(tool) {
   state.previewPoint = null;
   toolButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tool === tool));
   statusEl.textContent = `Tool: ${tool[0].toUpperCase()}${tool.slice(1)}`;
+  draw();
 }
 
 toolButtons.forEach((btn) => {
   btn.addEventListener('click', () => setTool(btn.dataset.tool));
 });
+
+function unitLabel(unit, value) {
+  if (unit === 'in') {
+    return value === 1 ? 'inch' : 'inches';
+  }
+  return value === 1 ? 'foot' : 'feet';
+}
+
+function updateScaleFromInputs() {
+  const preset = scalePresetSelect.value;
+
+  if (preset === '6in') {
+    state.scale = { value: 6, unit: 'in', label: '1 sq = 6 inches' };
+  } else if (preset === '1ft') {
+    state.scale = { value: 1, unit: 'ft', label: '1 sq = 1 foot' };
+  } else if (preset === '2ft') {
+    state.scale = { value: 2, unit: 'ft', label: '1 sq = 2 feet' };
+  } else {
+    const customValue = Number(customScaleValueInput.value);
+    const safeValue = Number.isFinite(customValue) && customValue > 0 ? customValue : 1;
+    const customUnit = customScaleUnitSelect.value;
+    state.scale = {
+      value: safeValue,
+      unit: customUnit,
+      label: `1 sq = ${safeValue} ${unitLabel(customUnit, safeValue)}`,
+    };
+  }
+
+  customScaleWrap.classList.toggle('hidden', preset !== 'custom');
+  scaleSummaryEl.textContent = `Current: ${state.scale.label}`;
+  draw();
+}
+
+scalePresetSelect.addEventListener('change', updateScaleFromInputs);
+customScaleValueInput.addEventListener('input', updateScaleFromInputs);
+customScaleUnitSelect.addEventListener('change', updateScaleFromInputs);
 
 function getMousePos(event) {
   const rect = canvas.getBoundingClientRect();
@@ -36,8 +85,48 @@ function getMousePos(event) {
   };
 }
 
+function snapToGrid(point) {
+  return {
+    x: Math.round(point.x / GRID_SIZE_PX) * GRID_SIZE_PX,
+    y: Math.round(point.y / GRID_SIZE_PX) * GRID_SIZE_PX,
+  };
+}
+
+function formatDistance(pixelDistance) {
+  const squares = pixelDistance / GRID_SIZE_PX;
+  const converted = squares * state.scale.value;
+  const unit = unitLabel(state.scale.unit, Number(converted.toFixed(2)));
+  return `${converted.toFixed(2)} ${unit}`;
+}
+
+function drawGrid() {
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#e2e8f0';
+
+  for (let x = 0; x <= canvas.width; x += GRID_SIZE_PX) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+
+  for (let y = 0; y <= canvas.height; y += GRID_SIZE_PX) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#334155';
+  ctx.font = '12px sans-serif';
+  ctx.fillText(state.scale.label, 10, 16);
+  ctx.restore();
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGrid();
 
   // Walls
   ctx.lineWidth = 4;
@@ -61,11 +150,10 @@ function draw() {
     ctx.stroke();
     const midX = (m.x1 + m.x2) / 2;
     const midY = (m.y1 + m.y2) / 2;
-    ctx.fillText(`${m.distance.toFixed(1)} px`, midX + 8, midY - 8);
+    ctx.fillText(m.label, midX + 8, midY - 8);
   });
 
-
-  if (state.tool === 'wall' && state.startPoint && state.previewPoint) {
+  if ((state.tool === 'wall' || state.tool === 'measure') && state.startPoint && state.previewPoint) {
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#64748b';
     ctx.setLineDash([8, 6]);
@@ -99,21 +187,20 @@ function evidenceAt(x, y) {
   return state.evidence.findIndex((e) => Math.hypot(e.x - x, e.y - y) <= 12);
 }
 
-
 canvas.addEventListener('mousemove', (event) => {
-  if (state.tool !== 'wall' || !state.startPoint) {
+  if ((state.tool !== 'wall' && state.tool !== 'measure') || !state.startPoint) {
     return;
   }
 
-  state.previewPoint = getMousePos(event);
+  state.previewPoint = snapToGrid(getMousePos(event));
   draw();
 });
 
 canvas.addEventListener('click', (event) => {
-  const p = getMousePos(event);
+  const snapped = snapToGrid(getMousePos(event));
 
   if (state.tool === 'evidence') {
-    state.evidence.push({ x: p.x, y: p.y, id: `E-${String(state.evidence.length + 1).padStart(2, '0')}`, notes: '' });
+    state.evidence.push({ x: snapped.x, y: snapped.y, id: `E-${String(state.evidence.length + 1).padStart(2, '0')}`, notes: '' });
     state.selectedEvidenceIndex = state.evidence.length - 1;
     const selected = state.evidence[state.selectedEvidenceIndex];
     evidenceIdInput.value = selected.id;
@@ -123,7 +210,7 @@ canvas.addEventListener('click', (event) => {
   }
 
   if (state.tool === 'select') {
-    state.selectedEvidenceIndex = evidenceAt(p.x, p.y);
+    state.selectedEvidenceIndex = evidenceAt(snapped.x, snapped.y);
     if (state.selectedEvidenceIndex >= 0) {
       const selected = state.evidence[state.selectedEvidenceIndex];
       evidenceIdInput.value = selected.id;
@@ -140,18 +227,21 @@ canvas.addEventListener('click', (event) => {
 
   if (state.tool === 'wall' || state.tool === 'measure') {
     if (!state.startPoint) {
-      state.startPoint = p;
-      state.previewPoint = p;
+      state.startPoint = snapped;
+      state.previewPoint = snapped;
       statusEl.textContent = `Tool: ${state.tool} (pick end point)`;
       draw();
       return;
     }
 
     if (state.tool === 'wall') {
-      addSegment(state.walls, state.startPoint, p);
+      addSegment(state.walls, state.startPoint, snapped);
     } else {
-      const d = Math.hypot(p.x - state.startPoint.x, p.y - state.startPoint.y);
-      addSegment(state.measurements, state.startPoint, p, { distance: d });
+      const d = Math.hypot(snapped.x - state.startPoint.x, snapped.y - state.startPoint.y);
+      addSegment(state.measurements, state.startPoint, snapped, {
+        distancePx: d,
+        label: formatDistance(d),
+      });
     }
 
     state.startPoint = null;
@@ -182,7 +272,7 @@ function downloadFile(name, dataUrl) {
 
 document.getElementById('exportPng').addEventListener('click', () => {
   draw();
-  downloadFile('evidence-tech-scene.png', canvas.toDataURL('image/png'));
+  downloadFile('crime-scene-diagram.png', canvas.toDataURL('image/png'));
 });
 
 document.getElementById('exportJson').addEventListener('click', () => {
@@ -190,6 +280,12 @@ document.getElementById('exportJson').addEventListener('click', () => {
     caseNumber: document.getElementById('caseNumber').value,
     sceneName: document.getElementById('sceneName').value,
     exportedAt: new Date().toISOString(),
+    sceneScale: {
+      gridSquarePixels: GRID_SIZE_PX,
+      valuePerSquare: state.scale.value,
+      unit: state.scale.unit,
+      label: state.scale.label,
+    },
     walls: state.walls,
     measurements: state.measurements,
     evidence: state.evidence,
@@ -197,7 +293,7 @@ document.getElementById('exportJson').addEventListener('click', () => {
 
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  downloadFile('evidence-tech-scene.json', url);
+  downloadFile('crime-scene-diagram.json', url);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 
@@ -214,4 +310,5 @@ document.getElementById('clearScene').addEventListener('click', () => {
   draw();
 });
 
+updateScaleFromInputs();
 draw();

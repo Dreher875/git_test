@@ -22,6 +22,31 @@
         <button data-tool="measure" class="tool">Measure</button>
       </div>
 
+      <h2>Scene Scale</h2>
+      <label>
+        Scale Preset
+        <select id="scalePreset">
+          <option value="6in">1 sq = 6 inches</option>
+          <option value="1ft" selected>1 sq = 1 foot</option>
+          <option value="2ft">1 sq = 2 feet</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+      <div id="customScaleWrap" class="inline-row hidden">
+        <label>
+          Custom value
+          <input id="customScaleValue" type="number" min="0.1" step="0.1" value="1" />
+        </label>
+        <label>
+          Unit
+          <select id="customScaleUnit">
+            <option value="in">inches</option>
+            <option value="ft" selected>feet</option>
+          </select>
+        </label>
+      </div>
+      <div id="scaleSummary" class="scale-summary">Current: 1 sq = 1 foot</div>
+
       <h2>Case Info</h2>
       <label>Case Number <input id="caseNumber" placeholder="2026-001" /></label>
       <label>Scene Name <input id="sceneName" placeholder="Living Room" /></label>

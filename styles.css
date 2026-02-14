@@ -52,7 +52,7 @@ label {
   margin-bottom: 0.65rem;
 }
 
-input, textarea {
+input, textarea, select {
   width: 100%;
   margin-top: 0.2rem;
   padding: 0.45rem;
@@ -95,14 +95,31 @@ button.danger {
 #sceneCanvas {
   border: 1px solid #d1d5db;
   max-width: 100%;
-  background-image:
-    linear-gradient(to right, #f1f5f9 1px, transparent 1px),
-    linear-gradient(to bottom, #f1f5f9 1px, transparent 1px);
-  background-size: 20px 20px;
 }
 
 #status {
   margin-top: 0.5rem;
   font-size: 0.9rem;
   color: #334155;
+}
+
+
+.inline-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.hidden {
+  display: none;
+}
+
+.scale-summary {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.45rem;
 }
