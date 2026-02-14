@@ -1,0 +1,13 @@
+{
+  "name": "@codex/crimescene",
+  "version": "1.0.0",
+  "description": "codex/crimescene desktop crime scene diagramming app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check app.js"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7"
+  }
+}

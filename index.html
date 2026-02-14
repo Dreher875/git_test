@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>codex/crimescene</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>codex/crimescene</h1>
+    <p>Create basic scene diagrams, place evidence markers, and export your work.</p>
+  </header>
+
+  <main>
+    <aside class="panel">
+      <h2>Tools</h2>
+      <div class="tool-group">
+        <button data-tool="select" class="tool active">Select</button>
+        <button data-tool="wall" class="tool">Wall</button>
+        <button data-tool="evidence" class="tool">Evidence</button>
+        <button data-tool="measure" class="tool">Measure</button>
+      </div>
+
+      <h2>Case Info</h2>
+      <label>Case Number <input id="caseNumber" placeholder="2026-001" /></label>
+      <label>Scene Name <input id="sceneName" placeholder="Living Room" /></label>
+
+      <h2>Selected Evidence</h2>
+      <label>Evidence ID <input id="evidenceId" placeholder="E-01" /></label>
+      <label>Notes <textarea id="evidenceNotes" rows="4" placeholder="Description..."></textarea></label>
+      <button id="saveEvidence">Save Evidence Details</button>
+
+      <h2>Export</h2>
+      <button id="exportJson">Export JSON</button>
+      <button id="exportPng">Export PNG</button>
+      <button id="clearScene" class="danger">Clear Scene</button>
+    </aside>
+
+    <section class="canvas-wrap">
+      <canvas id="sceneCanvas" width="1100" height="700" aria-label="Crime scene diagram canvas"></canvas>
+      <div id="status">Tool: Select</div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
