@@ -12,12 +12,14 @@ const state = {
   evidence: [],
   measurements: [],
   startPoint: null,
+  previewPoint: null,
   selectedEvidenceIndex: -1,
 };
 
 function setTool(tool) {
   state.tool = tool;
   state.startPoint = null;
+  state.previewPoint = null;
   toolButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tool === tool));
   statusEl.textContent = `Tool: ${tool[0].toUpperCase()}${tool.slice(1)}`;
 }
@@ -62,6 +64,18 @@ function draw() {
     ctx.fillText(`${m.distance.toFixed(1)} px`, midX + 8, midY - 8);
   });
 
+
+  if (state.tool === 'wall' && state.startPoint && state.previewPoint) {
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#64748b';
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(state.startPoint.x, state.startPoint.y);
+    ctx.lineTo(state.previewPoint.x, state.previewPoint.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
   // Evidence markers
   state.evidence.forEach((item, i) => {
     const selected = i === state.selectedEvidenceIndex;
@@ -84,6 +98,16 @@ function addSegment(list, p1, p2, extra = {}) {
 function evidenceAt(x, y) {
   return state.evidence.findIndex((e) => Math.hypot(e.x - x, e.y - y) <= 12);
 }
+
+
+canvas.addEventListener('mousemove', (event) => {
+  if (state.tool !== 'wall' || !state.startPoint) {
+    return;
+  }
+
+  state.previewPoint = getMousePos(event);
+  draw();
+});
 
 canvas.addEventListener('click', (event) => {
   const p = getMousePos(event);
@@ -117,7 +141,9 @@ canvas.addEventListener('click', (event) => {
   if (state.tool === 'wall' || state.tool === 'measure') {
     if (!state.startPoint) {
       state.startPoint = p;
+      state.previewPoint = p;
       statusEl.textContent = `Tool: ${state.tool} (pick end point)`;
+      draw();
       return;
     }
 
@@ -129,6 +155,7 @@ canvas.addEventListener('click', (event) => {
     }
 
     state.startPoint = null;
+    state.previewPoint = null;
     statusEl.textContent = `Tool: ${state.tool[0].toUpperCase()}${state.tool.slice(1)}`;
   }
 });
@@ -179,6 +206,7 @@ document.getElementById('clearScene').addEventListener('click', () => {
   state.evidence = [];
   state.measurements = [];
   state.startPoint = null;
+  state.previewPoint = null;
   state.selectedEvidenceIndex = -1;
   evidenceIdInput.value = '';
   evidenceNotesInput.value = '';
