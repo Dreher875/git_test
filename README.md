@@ -1,8 +1,8 @@
-# EvidenceTech MVP (Crime Scene Diagramming)
+# EvidenceTech Desktop MVP (Crime Scene Diagramming)
 
-This repository now contains a working browser-based MVP for crime scene diagramming.
+This repository contains a **desktop application** MVP for crime scene diagramming, built with Electron.
 
-## What it does
+## Features
 - Draw wall segments
 - Place evidence markers
 - Add/update evidence IDs and notes
@@ -10,16 +10,18 @@ This repository now contains a working browser-based MVP for crime scene diagram
 - Export the current scene as JSON
 - Export the diagram canvas as PNG
 
-## Run locally
-No build step is required.
+## Run as a desktop app
 
 ```bash
-python3 -m http.server 8000
+npm install
+npm start
 ```
 
-Then open:
+## Optional checks
 
-- `http://localhost:8000/index.html`
+```bash
+npm run check
+```
 
 ## Controls
 - **Select:** click evidence markers to edit ID/notes
@@ -28,6 +30,8 @@ Then open:
 - **Measure:** click start point, then end point
 
 ## Files
+- `main.js` — Electron main process/window bootstrap
 - `index.html` — UI layout
 - `styles.css` — styling
 - `app.js` — canvas interactions and export logic
+- `crime_scene_software_prd.md` — product requirements draft

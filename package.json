@@ -1,0 +1,13 @@
+{
+  "name": "evidencetech-desktop",
+  "version": "1.0.0",
+  "description": "Desktop crime scene diagramming MVP",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check app.js"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7"
+  }
+}
