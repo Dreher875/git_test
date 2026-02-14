@@ -7,41 +7,43 @@ header p { margin: 0.3rem 0 0; color: #cbd5e1; font-size: 0.9rem; }
 .top-toolbar {
   display: flex;
   gap: 0.6rem;
-  padding: 0.7rem 1rem;
-  overflow-x: auto;
-  background: #fff;
+  padding: 0.6rem 1rem;
   border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  align-items: stretch;
 }
-.tool-group-row {
+.toolbar-section {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   border: 1px solid #dbeafe;
   background: #f8fbff;
   border-radius: 8px;
-  padding: 0.45rem;
-  white-space: nowrap;
+  padding: 0.35rem 0.5rem;
 }
-.group-title { font-size: 0.72rem; color: #1d4ed8; font-weight: 700; margin-right: 0.2rem; }
+.toolbar-section.scene-controls { margin-left: auto; }
+.section-title { font-size: 0.72rem; color: #1d4ed8; font-weight: 700; margin-right: 0.15rem; }
 
 main { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; padding: 1rem; }
-.panel, .canvas-wrap {
-  background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); padding: 0.75rem;
-}
-.panel { height: calc(100vh - 195px); overflow: auto; }
+.panel, .canvas-wrap { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); padding: 0.75rem; }
+.panel { height: calc(100vh - 190px); overflow: auto; }
 .canvas-wrap { display: flex; flex-direction: column; }
 .panel h2 { font-size: 0.95rem; margin: 0.9rem 0 0.5rem; }
 
-label { display: block; font-size: 0.82rem; margin-bottom: 0.5rem; }
+label { display: block; font-size: 0.82rem; margin-bottom: 0.45rem; }
 input, textarea, select {
   width: 100%; margin-top: 0.15rem; padding: 0.42rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;
 }
 
 button {
-  border: 1px solid #94a3b8; background: #f8fafc; border-radius: 6px; padding: 0.4rem 0.55rem; cursor: pointer;
+  border: 1px solid #94a3b8; background: #f8fafc; border-radius: 6px; padding: 0.38rem 0.55rem; cursor: pointer;
 }
 button.active { border-color: #2563eb; background: #dbeafe; }
 button.danger { background: #fee2e2; border-color: #fca5a5; }
+
+.wall-dropdown-wrap { display: flex; gap: 0.3rem; align-items: center; }
+#wallModeDropdown { width: 130px; }
+.icon-toggle { min-width: 34px; padding: 0.35rem 0.45rem; font-weight: 700; }
 .toggle-on { border-color: #16a34a; background: #dcfce7; }
 .toggle-off { border-color: #a1a1aa; background: #f4f4f5; }
 

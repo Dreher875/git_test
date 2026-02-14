@@ -2,18 +2,20 @@ const canvas = document.getElementById('sceneCanvas');
 const ctx = canvas.getContext('2d');
 
 const toolButtons = [...document.querySelectorAll('.tool-btn')];
-const wallToolButtons = [...document.querySelectorAll('.wall-tool-btn')];
 const statusEl = document.getElementById('status');
+const wallModeDropdown = document.getElementById('wallModeDropdown');
 
 const toggleSnapGridBtn = document.getElementById('toggleSnapGrid');
 const toggleSnapWallsBtn = document.getElementById('toggleSnapWalls');
 const toggleOrthoBtn = document.getElementById('toggleOrtho');
 
+const undoBtn = document.getElementById('undoBtn');
+const redoBtn = document.getElementById('redoBtn');
+
 const scalePresetSelect = document.getElementById('scalePreset');
 const customScaleWrap = document.getElementById('customScaleWrap');
 const customScaleValueInput = document.getElementById('customScaleValue');
 const customScaleUnitSelect = document.getElementById('customScaleUnit');
-const scaleSummaryEl = document.getElementById('scaleSummary');
 
 const evidenceIdInput = document.getElementById('evidenceId');
 const evidenceNotesInput = document.getElementById('evidenceNotes');
@@ -30,8 +32,8 @@ const GRID_SIZE_PX = 24;
 const SNAP_THRESHOLD = 14;
 
 const state = {
-  tool: 'select',
-  wallTool: 'free', // free | straight | room
+  tool: 'select', // select | wall | room | measure | none
+  wallMode: 'free', // free | straight
   snapGrid: true,
   snapWalls: true,
   ortho: false,
@@ -44,7 +46,61 @@ const state = {
   selectedEvidenceIndex: -1,
   selectedWallIndex: -1,
   scale: { value: 1, unit: 'ft', label: '1 sq = 1 foot' },
+  history: [],
+  future: [],
 };
+
+function snapshot() {
+  return JSON.stringify({
+    walls: state.walls,
+    measurements: state.measurements,
+    evidence: state.evidence,
+    selectedWallIndex: state.selectedWallIndex,
+    selectedEvidenceIndex: state.selectedEvidenceIndex,
+    snapGrid: state.snapGrid,
+    snapWalls: state.snapWalls,
+    ortho: state.ortho,
+    wallMode: state.wallMode,
+    scale: state.scale,
+  });
+}
+
+function restore(snapshotStr) {
+  const data = JSON.parse(snapshotStr);
+  state.walls = data.walls || [];
+  state.measurements = data.measurements || [];
+  state.evidence = data.evidence || [];
+  state.selectedWallIndex = data.selectedWallIndex ?? -1;
+  state.selectedEvidenceIndex = data.selectedEvidenceIndex ?? -1;
+  state.snapGrid = !!data.snapGrid;
+  state.snapWalls = !!data.snapWalls;
+  state.ortho = !!data.ortho;
+  state.wallMode = data.wallMode || 'free';
+  state.scale = data.scale || { value: 1, unit: 'ft', label: '1 sq = 1 foot' };
+  wallModeDropdown.value = state.wallMode;
+  renderToggles();
+  updateWallPropertiesPanel();
+}
+
+function pushHistory() {
+  state.history.push(snapshot());
+  if (state.history.length > 200) state.history.shift();
+  state.future = [];
+}
+
+function undo() {
+  if (state.history.length === 0) return;
+  state.future.push(snapshot());
+  restore(state.history.pop());
+  draw();
+}
+
+function redo() {
+  if (state.future.length === 0) return;
+  state.history.push(snapshot());
+  restore(state.future.pop());
+  draw();
+}
 
 function unitLabel(unit, value) {
   if (unit === 'in') return value === 1 ? 'inch' : 'inches';
@@ -96,7 +152,7 @@ function lineIntersection(w1, w2) {
 }
 
 function effectiveOrthoEnabled() {
-  return state.wallTool === 'straight' || state.ortho !== state.shiftDown;
+  return state.wallMode === 'straight' || state.ortho !== state.shiftDown;
 }
 
 function applyOrtho(raw, start) {
@@ -105,43 +161,27 @@ function applyOrtho(raw, start) {
   return dx >= dy ? { x: raw.x, y: start.y } : { x: start.x, y: raw.y };
 }
 
-function wallSnapCandidates(startPoint) {
+function wallSnapCandidates() {
   const candidates = [];
   for (let i = 0; i < state.walls.length; i += 1) {
     const w = state.walls[i];
-    const p1 = { x: w.x1, y: w.y1 };
-    const p2 = { x: w.x2, y: w.y2 };
-    candidates.push(p1, p2, { x: (w.x1 + w.x2) / 2, y: (w.y1 + w.y2) / 2 });
-
-    if (startPoint) {
-      const vx = w.x2 - w.x1;
-      const vy = w.y2 - w.y1;
-      const len = Math.hypot(vx, vy) || 1;
-      const ux = vx / len;
-      const uy = vy / len;
-      const px = -uy;
-      const py = ux;
-      const sx = startPoint.x;
-      const sy = startPoint.y;
-      const toRaw = { x: ux * 80, y: uy * 80 };
-      candidates.push({ x: sx + toRaw.x, y: sy + toRaw.y }); // collinear direction sample
-      candidates.push({ x: sx + px * 80, y: sy + py * 80 }); // perpendicular direction sample
-    }
+    candidates.push(
+      { x: w.x1, y: w.y1 },
+      { x: w.x2, y: w.y2 },
+      { x: (w.x1 + w.x2) / 2, y: (w.y1 + w.y2) / 2 },
+    );
   }
-
   for (let i = 0; i < state.walls.length; i += 1) {
     for (let j = i + 1; j < state.walls.length; j += 1) {
       const inter = lineIntersection(state.walls[i], state.walls[j]);
       if (inter) candidates.push(inter);
     }
   }
-
   return candidates;
 }
 
-function snapToWalls(raw, startPoint = null) {
+function snapToWalls(raw) {
   if (!state.snapWalls || state.walls.length === 0) return raw;
-
   let best = raw;
   let bestD = SNAP_THRESHOLD;
 
@@ -149,36 +189,40 @@ function snapToWalls(raw, startPoint = null) {
     const onSeg = nearestPointOnSegment(raw, w);
     const dSeg = distance(raw, onSeg);
     if (dSeg < bestD) { bestD = dSeg; best = onSeg; }
-
-    const endpoints = [{ x: w.x1, y: w.y1 }, { x: w.x2, y: w.y2 }, { x: (w.x1 + w.x2) / 2, y: (w.y1 + w.y2) / 2 }];
-    endpoints.forEach((pt) => {
-      const d = distance(raw, pt);
-      if (d < bestD) { bestD = d; best = pt; }
-    });
   });
 
-  wallSnapCandidates(startPoint).forEach((c) => {
-    const d = distance(raw, c);
-    if (d < bestD) { bestD = d; best = c; }
+  wallSnapCandidates().forEach((pt) => {
+    const d = distance(raw, pt);
+    if (d < bestD) { bestD = d; best = pt; }
   });
 
   return best;
 }
 
-function processWallPoint(raw, startPoint = null) {
+function processPoint(raw, startPoint = null) {
   let p = { ...raw };
   if (startPoint && effectiveOrthoEnabled()) p = applyOrtho(p, startPoint);
   if (state.snapGrid) p = snapToGrid(p);
-  p = snapToWalls(p, startPoint);
+  p = snapToWalls(p);
   return p;
+}
+
+function pointToSegmentDistance(point, wall) {
+  return distance(point, nearestPointOnSegment(point, wall));
+}
+
+function wallAt(point) {
+  return state.walls.findIndex((w) => pointToSegmentDistance(point, w) <= Math.max(8, (w.thickness || 4) + 2));
+}
+
+function evidenceAt(point) {
+  return state.evidence.findIndex((e) => distance(point, e) <= 12);
 }
 
 function wallLengthAndAngle(wall) {
   const dx = wall.x2 - wall.x1;
   const dy = wall.y2 - wall.y1;
-  const lenPx = Math.hypot(dx, dy);
-  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-  return { lenPx, angle };
+  return { lenPx: Math.hypot(dx, dy), angle: (Math.atan2(dy, dx) * 180) / Math.PI };
 }
 
 function updateWallPropertiesPanel() {
@@ -187,10 +231,10 @@ function updateWallPropertiesPanel() {
     wallPropertiesPanel.classList.add('hidden');
     return;
   }
-
   const wall = state.walls[state.selectedWallIndex];
   const { lenPx, angle } = wallLengthAndAngle(wall);
-  wallLengthInput.value = `${pxToSceneUnits(lenPx).toFixed(2)} ${unitLabel(state.scale.unit, Number(pxToSceneUnits(lenPx).toFixed(2)))}`;
+  const value = pxToSceneUnits(lenPx);
+  wallLengthInput.value = `${value.toFixed(2)} ${unitLabel(state.scale.unit, Number(value.toFixed(2)))}`;
   wallAngleInput.value = `${angle.toFixed(1)}°`;
   wallThicknessInput.value = wall.thickness || 4;
   wallLabelInput.value = wall.label || '';
@@ -199,41 +243,52 @@ function updateWallPropertiesPanel() {
   wallPropertiesPanel.classList.remove('hidden');
 }
 
-function setTool(tool) {
-  state.tool = tool;
-  state.startPoint = null;
-  state.previewPoint = null;
-  toolButtons.forEach((b) => b.classList.toggle('active', b.dataset.tool === tool));
-  statusEl.textContent = `Tool: ${tool === 'wall' ? `Wall (${state.wallTool})` : tool}`;
-  draw();
-}
-
-toolButtons.forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));
-wallToolButtons.forEach((b) => b.addEventListener('click', () => {
-  state.wallTool = b.dataset.wallTool;
-  wallToolButtons.forEach((x) => x.classList.toggle('active', x === b));
-  setTool('wall');
-}));
-
 function renderToggles() {
   const map = [
-    [toggleSnapGridBtn, state.snapGrid, 'Snap Grid'],
-    [toggleSnapWallsBtn, state.snapWalls, 'Snap Walls'],
-    [toggleOrthoBtn, state.ortho, 'Ortho'],
+    [toggleSnapGridBtn, state.snapGrid, 'SG'],
+    [toggleSnapWallsBtn, state.snapWalls, 'SW'],
+    [toggleOrthoBtn, state.ortho, 'O'],
   ];
   map.forEach(([btn, val, label]) => {
-    btn.textContent = `${label}: ${val ? 'ON' : 'OFF'}`;
+    btn.textContent = label;
+    btn.title = `${label} ${val ? 'ON' : 'OFF'}`;
     btn.classList.toggle('toggle-on', val);
     btn.classList.toggle('toggle-off', !val);
   });
 }
 
+function setTool(tool) {
+  state.tool = tool;
+  state.startPoint = null;
+  state.previewPoint = null;
+  toolButtons.forEach((b) => b.classList.toggle('active', b.dataset.tool === tool));
+  statusEl.textContent = tool === 'none' ? 'No tool selected (Esc to deselect)' : `Tool: ${tool}`;
+  draw();
+}
+
+toolButtons.forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));
+wallModeDropdown.addEventListener('change', () => {
+  state.wallMode = wallModeDropdown.value;
+  if (state.tool === 'wall') statusEl.textContent = `Tool: wall (${state.wallMode})`;
+  draw();
+});
+
 toggleSnapGridBtn.addEventListener('click', () => { state.snapGrid = !state.snapGrid; renderToggles(); draw(); });
 toggleSnapWallsBtn.addEventListener('click', () => { state.snapWalls = !state.snapWalls; renderToggles(); draw(); });
 toggleOrthoBtn.addEventListener('click', () => { state.ortho = !state.ortho; renderToggles(); draw(); });
 
-window.addEventListener('keydown', (e) => { if (e.key === 'Shift') { state.shiftDown = true; draw(); } });
-window.addEventListener('keyup', (e) => { if (e.key === 'Shift') { state.shiftDown = false; draw(); } });
+undoBtn.addEventListener('click', undo);
+redoBtn.addEventListener('click', redo);
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Shift') state.shiftDown = true;
+  if (e.key === 'Escape') setTool('none');
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    if (e.shiftKey) redo(); else undo();
+  }
+});
+window.addEventListener('keyup', (e) => { if (e.key === 'Shift') state.shiftDown = false; });
 
 function updateScaleFromInputs() {
   const preset = scalePresetSelect.value;
@@ -246,7 +301,6 @@ function updateScaleFromInputs() {
     state.scale = { value: v, unit: u, label: `1 sq = ${v} ${unitLabel(u, v)}` };
   }
   customScaleWrap.classList.toggle('hidden', preset !== 'custom');
-  scaleSummaryEl.textContent = `Current: ${state.scale.label}`;
   updateWallPropertiesPanel();
   draw();
 }
@@ -262,7 +316,7 @@ function drawGrid() {
   for (let y = 0; y <= canvas.height; y += GRID_SIZE_PX) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
   ctx.fillStyle = '#334155';
   ctx.font = '12px sans-serif';
-  ctx.fillText(`${state.scale.label} | Shift toggles Ortho`, 10, 16);
+  ctx.fillText(`${state.scale.label} | Esc deselects current tool`, 10, 16);
   ctx.restore();
 }
 
@@ -274,10 +328,7 @@ function draw() {
     const selected = i === state.selectedWallIndex;
     ctx.lineWidth = wall.thickness || 4;
     ctx.strokeStyle = selected ? '#2563eb' : '#0f172a';
-    ctx.beginPath();
-    ctx.moveTo(wall.x1, wall.y1);
-    ctx.lineTo(wall.x2, wall.y2);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(wall.x1, wall.y1); ctx.lineTo(wall.x2, wall.y2); ctx.stroke();
     if (wall.label) {
       ctx.fillStyle = '#1f2937';
       ctx.font = '12px sans-serif';
@@ -297,64 +348,50 @@ function draw() {
   state.evidence.forEach((e, idx) => {
     const selected = idx === state.selectedEvidenceIndex;
     ctx.beginPath(); ctx.arc(e.x, e.y, selected ? 11 : 9, 0, Math.PI * 2);
-    ctx.fillStyle = selected ? '#dc2626' : '#ef4444'; ctx.fill();
-    ctx.fillStyle = '#111827'; ctx.font = '12px sans-serif';
+    ctx.fillStyle = selected ? '#dc2626' : '#ef4444';
+    ctx.fill();
+    ctx.fillStyle = '#111827';
+    ctx.font = '12px sans-serif';
     ctx.fillText(e.id || `E-${String(idx + 1).padStart(2, '0')}`, e.x + 10, e.y - 10);
   });
 
   if (state.startPoint && state.previewPoint) {
-    ctx.lineWidth = 2; ctx.strokeStyle = '#64748b'; ctx.setLineDash([8, 6]);
-    if (state.tool === 'wall' && state.wallTool === 'room') {
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#64748b';
+    ctx.setLineDash([8, 6]);
+    if (state.tool === 'room') {
       const x1 = state.startPoint.x; const y1 = state.startPoint.y; const x2 = state.previewPoint.x; const y2 = state.previewPoint.y;
       ctx.strokeRect(Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1));
     } else {
       ctx.beginPath(); ctx.moveTo(state.startPoint.x, state.startPoint.y); ctx.lineTo(state.previewPoint.x, state.previewPoint.y); ctx.stroke();
-      if (state.tool === 'wall' && state.wallTool === 'free') {
+      if (state.tool === 'wall' && state.wallMode === 'free') {
         const d = distance(state.startPoint, state.previewPoint);
         const ang = (Math.atan2(state.previewPoint.y - state.startPoint.y, state.previewPoint.x - state.startPoint.x) * 180) / Math.PI;
-        ctx.fillStyle = '#334155'; ctx.font = '12px sans-serif';
-        ctx.fillText(`${pxToSceneUnits(d).toFixed(2)} ${unitLabel(state.scale.unit, Number(pxToSceneUnits(d).toFixed(2)))} | ${ang.toFixed(1)}°`, state.previewPoint.x + 8, state.previewPoint.y - 8);
+        const val = pxToSceneUnits(d);
+        ctx.fillStyle = '#334155';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`${val.toFixed(2)} ${unitLabel(state.scale.unit, Number(val.toFixed(2)))} | ${ang.toFixed(1)}°`, state.previewPoint.x + 8, state.previewPoint.y - 8);
       }
     }
     ctx.setLineDash([]);
   }
 }
 
-function pointToSegmentDistance(point, wall) {
-  return distance(point, nearestPointOnSegment(point, wall));
-}
-
-function wallAt(point) {
-  return state.walls.findIndex((w) => pointToSegmentDistance(point, w) <= Math.max(8, (w.thickness || 4) + 2));
-}
-
-function evidenceAt(point) {
-  return state.evidence.findIndex((e) => distance(point, e) <= 12);
-}
-
 canvas.addEventListener('mousemove', (event) => {
-  const raw = getMousePos(event);
   if (!state.startPoint) return;
-
-  if (state.tool === 'wall') {
-    state.previewPoint = processWallPoint(raw, state.startPoint);
-    draw();
-  } else if (state.tool === 'measure') {
-    let p = { ...raw };
-    if (state.snapGrid) p = snapToGrid(p);
-    if (state.snapWalls) p = snapToWalls(p, state.startPoint);
-    state.previewPoint = p;
-    draw();
-  }
+  const raw = getMousePos(event);
+  state.previewPoint = processPoint(raw, state.startPoint);
+  draw();
 });
 
 canvas.addEventListener('click', (event) => {
   const raw = getMousePos(event);
 
+  if (state.tool === 'none') return;
+
   if (state.tool === 'select') {
     state.selectedWallIndex = wallAt(raw);
     state.selectedEvidenceIndex = evidenceAt(raw);
-
     if (state.selectedEvidenceIndex >= 0) {
       const sel = state.evidence[state.selectedEvidenceIndex];
       evidenceIdInput.value = sel.id;
@@ -365,7 +402,6 @@ canvas.addEventListener('click', (event) => {
       evidenceNotesInput.value = '';
       statusEl.textContent = state.selectedWallIndex >= 0 ? 'Wall selected' : 'Nothing selected';
     }
-
     updateWallPropertiesPanel();
     draw();
     return;
@@ -373,24 +409,36 @@ canvas.addEventListener('click', (event) => {
 
   if (state.tool === 'wall') {
     if (!state.startPoint) {
-      state.startPoint = processWallPoint(raw);
+      state.startPoint = processPoint(raw);
       state.previewPoint = state.startPoint;
-      statusEl.textContent = `Wall start set (${state.wallTool})`;
+      statusEl.textContent = `Wall start set (${state.wallMode})`;
       draw();
       return;
     }
+    pushHistory();
+    const end = processPoint(raw, state.startPoint);
+    state.walls.push({ x1: state.startPoint.x, y1: state.startPoint.y, x2: end.x, y2: end.y, thickness: 4, label: '', designation: 'interior' });
+    state.startPoint = null;
+    state.previewPoint = null;
+    draw();
+    return;
+  }
 
-    const end = processWallPoint(raw, state.startPoint);
-    if (state.wallTool === 'room') {
-      const a = state.startPoint;
-      const c = end;
-      const b = { x: c.x, y: a.y };
-      const d = { x: a.x, y: c.y };
-      [[a, b], [b, c], [c, d], [d, a]].forEach(([p1, p2]) => state.walls.push({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, thickness: 4, label: '', designation: 'interior' }));
-    } else {
-      state.walls.push({ x1: state.startPoint.x, y1: state.startPoint.y, x2: end.x, y2: end.y, thickness: 4, label: '', designation: 'interior' });
+  if (state.tool === 'room') {
+    if (!state.startPoint) {
+      state.startPoint = processPoint(raw);
+      state.previewPoint = state.startPoint;
+      statusEl.textContent = 'Room start corner set';
+      draw();
+      return;
     }
-
+    pushHistory();
+    const end = processPoint(raw, state.startPoint);
+    const a = state.startPoint;
+    const c = end;
+    const b = { x: c.x, y: a.y };
+    const d = { x: a.x, y: c.y };
+    [[a, b], [b, c], [c, d], [d, a]].forEach(([p1, p2]) => state.walls.push({ x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, thickness: 4, label: '', designation: 'interior' }));
     state.startPoint = null;
     state.previewPoint = null;
     draw();
@@ -398,38 +446,26 @@ canvas.addEventListener('click', (event) => {
   }
 
   if (state.tool === 'measure') {
-    let p = { ...raw };
-    if (state.snapGrid) p = snapToGrid(p);
-    if (state.snapWalls) p = snapToWalls(p, state.startPoint);
-
     if (!state.startPoint) {
-      state.startPoint = p;
-      state.previewPoint = p;
+      state.startPoint = processPoint(raw);
+      state.previewPoint = state.startPoint;
       draw();
       return;
     }
-
+    pushHistory();
+    const p = processPoint(raw, state.startPoint);
     const d = distance(state.startPoint, p);
     const value = pxToSceneUnits(d);
     state.measurements.push({ x1: state.startPoint.x, y1: state.startPoint.y, x2: p.x, y2: p.y, label: `${value.toFixed(2)} ${unitLabel(state.scale.unit, Number(value.toFixed(2)))}` });
     state.startPoint = null;
     state.previewPoint = null;
     draw();
-    return;
-  }
-
-  // default: evidence placement
-  if (state.tool === 'evidence') {
-    let p = { ...raw };
-    if (state.snapGrid) p = snapToGrid(p);
-    if (state.snapWalls) p = snapToWalls(p);
-    state.evidence.push({ x: p.x, y: p.y, id: `E-${String(state.evidence.length + 1).padStart(2, '0')}`, notes: '' });
-    draw();
   }
 });
 
 document.getElementById('saveEvidence').addEventListener('click', () => {
   if (state.selectedEvidenceIndex < 0) return;
+  pushHistory();
   const item = state.evidence[state.selectedEvidenceIndex];
   item.id = evidenceIdInput.value.trim() || item.id;
   item.notes = evidenceNotesInput.value.trim();
@@ -438,6 +474,7 @@ document.getElementById('saveEvidence').addEventListener('click', () => {
 
 document.getElementById('saveWallProperties').addEventListener('click', () => {
   if (state.selectedWallIndex < 0) return;
+  pushHistory();
   const wall = state.walls[state.selectedWallIndex];
   wall.thickness = Math.max(1, Number(wallThicknessInput.value) || 4);
   wall.label = wallLabelInput.value.trim();
@@ -451,6 +488,7 @@ document.getElementById('createOffsetWall').addEventListener('click', () => {
     statusEl.textContent = 'Select a wall for parallel offset.';
     return;
   }
+  pushHistory();
   const wall = state.walls[state.selectedWallIndex];
   const units = Math.max(0.1, Number(document.getElementById('offsetDistance').value) || 1);
   const px = (units / state.scale.value) * GRID_SIZE_PX;
@@ -470,7 +508,6 @@ document.getElementById('createOffsetWall').addEventListener('click', () => {
     label: `${wall.label || 'wall'}-offset`,
     designation: wall.designation || 'interior',
   });
-
   draw();
 });
 
@@ -481,19 +518,22 @@ function downloadFile(name, url) {
   a.click();
 }
 
-document.getElementById('exportPng').addEventListener('click', () => {
-  draw();
-  downloadFile('crime-scene-diagram.png', canvas.toDataURL('image/png'));
-});
+function runExport() {
+  const exportType = document.getElementById('exportDropdown').value;
+  if (exportType === 'png') {
+    draw();
+    downloadFile('crime-scene-diagram.png', canvas.toDataURL('image/png'));
+    return;
+  }
 
-document.getElementById('exportJson').addEventListener('click', () => {
   const payload = {
     caseNumber: document.getElementById('caseNumber').value,
     sceneName: document.getElementById('sceneName').value,
     exportedAt: new Date().toISOString(),
     sceneScale: { gridSquarePixels: GRID_SIZE_PX, ...state.scale },
     toggles: { snapGrid: state.snapGrid, snapWalls: state.snapWalls, ortho: state.ortho },
-    wallTool: state.wallTool,
+    tool: state.tool,
+    wallMode: state.wallMode,
     walls: state.walls,
     measurements: state.measurements,
     evidence: state.evidence,
@@ -502,9 +542,12 @@ document.getElementById('exportJson').addEventListener('click', () => {
   const url = URL.createObjectURL(blob);
   downloadFile('crime-scene-diagram.json', url);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-});
+}
+
+document.getElementById('runExport').addEventListener('click', runExport);
 
 document.getElementById('clearScene').addEventListener('click', () => {
+  pushHistory();
   state.walls = [];
   state.measurements = [];
   state.evidence = [];

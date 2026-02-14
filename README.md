@@ -3,26 +3,20 @@
 This repository contains the **crime_scene** desktop application for crime scene diagramming, built with Electron.
 
 ## Features
-- Horizontal top toolbar with grouped controls:
-  - Selection Tools
-  - Wall Tools
-  - Snap Toggles
-  - Measurement Tools
-  - Scene Settings
-- Wall tools:
-  - Free Draw Wall mode
-  - Straight (Ortho-assisted) Wall mode
-  - Rectangle Room tool (auto-creates 4 connected walls)
-- Independent toggles always visible:
-  - Snap to Grid
-  - Snap to Walls
-  - Ortho
-- Shift key temporarily toggles ortho constraint while drawing walls.
-- Snap-to-wall behaviors include endpoint, midpoint, segment/intersection proximity snaps.
-- Scene scale settings (1 sq = 6 inches, 1 foot, 2 feet, or custom)
-- Wall properties panel (length, angle, thickness, label, interior/exterior)
-- Offset / Parallel wall tool from selected wall
-- Measurements, evidence markers, JSON export, PNG export
+- Simplified top toolbar with 3 major areas:
+  - Primary Mode Tools (Select, Wall, Room, Measure)
+  - Snap Toggles (Snap Grid, Snap Walls, Ortho)
+  - Scene Controls (Scale + Export)
+- Wall uses a single dropdown with:
+  - Free Wall
+  - Straight Wall
+- Only one primary tool is active at a time.
+- Undo / Redo support (buttons + Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z).
+- Press **Escape** to deselect the current tool.
+- Rectangle room drawing tool.
+- Wall properties panel (length, angle, thickness, label, interior/exterior).
+- Offset / parallel wall creation from selected wall.
+- JSON/PNG export and scene scale presets.
 
 ## Run as a desktop app
 
