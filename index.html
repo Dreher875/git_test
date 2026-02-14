@@ -22,14 +22,18 @@
         <button data-tool="measure" class="tool">Measure</button>
       </div>
 
-      <label>
-        Wall Mode
-        <select id="wallMode">
-          <option value="orthogonal">90° walls</option>
-          <option value="free">Free draw walls</option>
-          <option value="snap" selected>Snap to grid + walls</option>
-        </select>
-      </label>
+      <section class="wall-settings" aria-label="Wall settings">
+        <h2>Wall Settings</h2>
+        <label>
+          Wall Mode
+          <select id="wallMode">
+            <option value="orthogonal">90° walls</option>
+            <option value="free">Free draw walls</option>
+            <option value="snap" selected>Snap to grid + walls</option>
+          </select>
+        </label>
+        <div class="wall-help">Tip: choose a mode before placing wall start/end points.</div>
+      </section>
 
       <h2>Scene Scale</h2>
       <label>

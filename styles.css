@@ -123,3 +123,24 @@ button.danger {
   border-radius: 6px;
   padding: 0.45rem;
 }
+
+
+.wall-settings {
+  margin-top: 0.9rem;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 8px;
+  padding: 0.65rem;
+}
+
+.wall-settings h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #1d4ed8;
+}
+
+.wall-help {
+  font-size: 0.78rem;
+  color: #334155;
+  margin-top: 0.25rem;
+}

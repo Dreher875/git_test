@@ -27,7 +27,7 @@ npm run check
 ## Controls
 - **Select:** click evidence markers to edit ID/notes
 - **Wall:** click start point, then end point
-  - Wall mode options: 90° walls, free draw, or snap to grid + walls
+  - Use the **Wall Settings → Wall Mode** dropdown (90° walls, free draw, or snap to grid + walls)
 - **Evidence:** click to place marker
 - **Measure:** click start point, then end point
 

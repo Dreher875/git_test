@@ -36,7 +36,12 @@ function setTool(tool) {
   state.startPoint = null;
   state.previewPoint = null;
   toolButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tool === tool));
-  statusEl.textContent = `Tool: ${tool[0].toUpperCase()}${tool.slice(1)}`;
+  if (tool === 'wall') {
+    const selectedMode = wallModeSelect.options[wallModeSelect.selectedIndex].text;
+    statusEl.textContent = `Tool: Wall (${selectedMode})`;
+  } else {
+    statusEl.textContent = `Tool: ${tool[0].toUpperCase()}${tool.slice(1)}`;
+  }
   draw();
 }
 
