@@ -5,6 +5,9 @@ const toolButtons = [...document.querySelectorAll('.tool-btn')];
 const statusEl = document.getElementById('status');
 const wallModeDropdown = document.getElementById('wallModeDropdown');
 
+const tabButtons = [...document.querySelectorAll('.tab-btn')];
+const ribbonPanels = [...document.querySelectorAll('.ribbon-panel')];
+
 const toggleSnapGridBtn = document.getElementById('toggleSnapGrid');
 const toggleSnapWallsBtn = document.getElementById('toggleSnapWalls');
 const toggleOrthoBtn = document.getElementById('toggleOrtho');
@@ -243,15 +246,25 @@ function updateWallPropertiesPanel() {
   wallPropertiesPanel.classList.remove('hidden');
 }
 
+
+function setActiveTab(tabName) {
+  tabButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tabName));
+  ribbonPanels.forEach((panel) => panel.classList.toggle('active', panel.dataset.panel === tabName));
+}
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
+});
+
 function renderToggles() {
   const map = [
-    [toggleSnapGridBtn, state.snapGrid, 'SG'],
-    [toggleSnapWallsBtn, state.snapWalls, 'SW'],
-    [toggleOrthoBtn, state.ortho, 'O'],
+    [toggleSnapGridBtn, state.snapGrid, 'Snap Grid'],
+    [toggleSnapWallsBtn, state.snapWalls, 'Snap Walls'],
+    [toggleOrthoBtn, state.ortho, 'Ortho'],
   ];
   map.forEach(([btn, val, label]) => {
-    btn.textContent = label;
-    btn.title = `${label} ${val ? 'ON' : 'OFF'}`;
+    btn.title = `${label}: ${val ? 'ON' : 'OFF'}`;
+    btn.setAttribute('aria-pressed', String(val));
     btn.classList.toggle('toggle-on', val);
     btn.classList.toggle('toggle-off', !val);
   });
@@ -262,7 +275,7 @@ function setTool(tool) {
   state.startPoint = null;
   state.previewPoint = null;
   toolButtons.forEach((b) => b.classList.toggle('active', b.dataset.tool === tool));
-  statusEl.textContent = tool === 'none' ? 'No tool selected (Esc to deselect)' : `Tool: ${tool}`;
+  statusEl.textContent = tool === 'none' ? 'No tool selected (Esc to deselect)' : (tool === 'wall' ? `Tool: wall (${state.wallMode})` : `Tool: ${tool}`);
   draw();
 }
 
@@ -559,6 +572,7 @@ document.getElementById('clearScene').addEventListener('click', () => {
   draw();
 });
 
+setActiveTab('draw');
 updateScaleFromInputs();
 renderToggles();
 updateWallPropertiesPanel();

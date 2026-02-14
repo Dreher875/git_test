@@ -1,56 +1,62 @@
 :root { font-family: Inter, system-ui, Arial, sans-serif; color: #111827; }
 body { margin: 0; background: #f3f4f6; }
-header { background: #0f172a; color: #f8fafc; padding: 0.8rem 1.2rem; }
-header h1 { margin: 0; font-size: 1.15rem; }
-header p { margin: 0.3rem 0 0; color: #cbd5e1; font-size: 0.9rem; }
+header { background: #0f172a; color: #f8fafc; padding: 0.7rem 1.1rem; }
+header h1 { margin: 0; font-size: 1.1rem; }
+header p { margin: 0.25rem 0 0; color: #cbd5e1; font-size: 0.86rem; }
 
-.top-toolbar {
-  display: flex;
-  gap: 0.6rem;
-  padding: 0.6rem 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: #fff;
-  align-items: stretch;
+.ribbon { background: #fff; border-bottom: 1px solid #dbe2ee; }
+.ribbon-tabs { display: flex; gap: 0.25rem; padding: 0.35rem 0.6rem 0; }
+.tab-btn {
+  border: 1px solid transparent; background: #f8fafc; border-radius: 6px 6px 0 0;
+  padding: 0.32rem 0.55rem; font-size: 0.75rem; font-weight: 700; cursor: pointer;
 }
-.toolbar-section {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 1px solid #dbeafe;
-  background: #f8fbff;
-  border-radius: 8px;
-  padding: 0.35rem 0.5rem;
+.tab-btn.active { background: #eaf2ff; border-color: #bfdbfe; color: #1d4ed8; }
+
+.ribbon-panels { border-top: 1px solid #bfdbfe; padding: 0.45rem 0.6rem; }
+.ribbon-panel { display: none; align-items: stretch; gap: 0.5rem; }
+.ribbon-panel.active { display: flex; }
+
+.ribbon-group {
+  display: flex; align-items: flex-end; gap: 0.35rem;
+  border: 1px solid #dbeafe; background: #f8fbff; border-radius: 8px; padding: 0.4rem;
 }
-.toolbar-section.scene-controls { margin-left: auto; }
-.section-title { font-size: 0.72rem; color: #1d4ed8; font-weight: 700; margin-right: 0.15rem; }
+
+.ribbon-tool {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.2rem; min-width: 78px; min-height: 66px; border: 1px solid #a8bfdc;
+  border-radius: 8px; background: #ffffff; cursor: pointer; padding: 0.3rem;
+}
+.ribbon-tool span { font-size: 0.72rem; }
+.ribbon-tool svg {
+  width: 21px; height: 21px; fill: none; stroke: #1f2937; stroke-width: 1.9;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.ribbon-tool.active { border-color: #2563eb; background: #dbeafe; }
+.ribbon-tool.danger { border-color: #fca5a5; background: #fee2e2; }
+
+.ribbon-field { font-size: 0.75rem; min-width: 130px; }
+.ribbon-field select, .ribbon-field input {
+  width: 100%; margin-top: 0.14rem; padding: 0.35rem; border: 1px solid #cbd5e1; border-radius: 6px;
+}
 
 main { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; padding: 1rem; }
 .panel, .canvas-wrap { background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); padding: 0.75rem; }
-.panel { height: calc(100vh - 190px); overflow: auto; }
+.panel { height: calc(100vh - 226px); overflow: auto; }
 .canvas-wrap { display: flex; flex-direction: column; }
-.panel h2 { font-size: 0.95rem; margin: 0.9rem 0 0.5rem; }
 
+.panel h2 { font-size: 0.92rem; margin: 0.9rem 0 0.45rem; }
 label { display: block; font-size: 0.82rem; margin-bottom: 0.45rem; }
-input, textarea, select {
-  width: 100%; margin-top: 0.15rem; padding: 0.42rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box;
-}
+input, textarea, select { width: 100%; margin-top: 0.14rem; padding: 0.42rem; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
 
-button {
-  border: 1px solid #94a3b8; background: #f8fafc; border-radius: 6px; padding: 0.38rem 0.55rem; cursor: pointer;
-}
+button { border: 1px solid #94a3b8; background: #f8fafc; border-radius: 6px; padding: 0.38rem 0.55rem; cursor: pointer; }
 button.active { border-color: #2563eb; background: #dbeafe; }
-button.danger { background: #fee2e2; border-color: #fca5a5; }
-
-.wall-dropdown-wrap { display: flex; gap: 0.3rem; align-items: center; }
-#wallModeDropdown { width: 130px; }
-.icon-toggle { min-width: 34px; padding: 0.35rem 0.45rem; font-weight: 700; }
-.toggle-on { border-color: #16a34a; background: #dcfce7; }
-.toggle-off { border-color: #a1a1aa; background: #f4f4f5; }
 
 #sceneCanvas { border: 1px solid #d1d5db; max-width: 100%; }
 #status { margin-top: 0.45rem; font-size: 0.88rem; color: #334155; }
 
-.inline-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.inline-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; min-width: 180px; }
 .hidden { display: none; }
-.scale-summary { font-size: 0.75rem; color: #334155; }
 .muted { font-size: 0.8rem; color: #64748b; }
+
+.toggle-on { border-color: #16a34a; background: #dcfce7; }
+.toggle-off { border-color: #a1a1aa; background: #f4f4f5; }
