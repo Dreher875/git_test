@@ -280,10 +280,22 @@ function parsePathFromSvg(svgText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgText, 'image/svg+xml');
   const svg = doc.querySelector('svg');
-  const path = doc.querySelector('path');
+  const paths = [...doc.querySelectorAll('path')];
   const viewBox = (svg?.getAttribute('viewBox') || '0 0 100 100').split(/\s+/).map(Number);
+  const basePaths = [];
+  const detailPaths = [];
+
+  paths.forEach((pathEl) => {
+    const d = pathEl.getAttribute('d') || '';
+    if (!d) return;
+    const layer = (pathEl.getAttribute('data-layer') || pathEl.getAttribute('class') || '').toLowerCase();
+    if (layer.includes('detail')) detailPaths.push(new Path2D(d));
+    else basePaths.push(new Path2D(d));
+  });
+
   return {
-    d: path?.getAttribute('d') || '',
+    basePaths,
+    detailPaths,
     baseWidth: viewBox[2] || 100,
     baseHeight: viewBox[3] || 100,
   };
@@ -294,9 +306,21 @@ async function loadSprites() {
     const res = await fetch(file);
     const text = await res.text();
     const parsed = parsePathFromSvg(text);
-    return [type, { path: new Path2D(parsed.d), baseWidth: parsed.baseWidth, baseHeight: parsed.baseHeight }];
+    return [type, {
+      basePaths: parsed.basePaths,
+      detailPaths: parsed.detailPaths,
+      baseWidth: parsed.baseWidth,
+      baseHeight: parsed.baseHeight,
+    }];
   }));
   state.sprites = Object.fromEntries(entries);
+}
+
+function drawSpritePaths(paths) {
+  paths.forEach((path) => {
+    ctx.fill(path);
+    ctx.stroke(path);
+  });
 }
 
 function drawGrid() {
@@ -323,11 +347,29 @@ function drawFurnitureItem(f) {
   ctx.translate(f.x, f.y);
   ctx.rotate(f.rotation);
   ctx.scale(f.width / sprite.baseWidth, f.height / sprite.baseHeight);
-  ctx.fillStyle = 'rgba(31,41,55,0.05)';
+
+  ctx.shadowColor = 'rgba(0,0,0,0.08)';
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 2;
+  ctx.fillStyle = '#e5e7eb';
   ctx.strokeStyle = '#1f2937';
-  ctx.lineWidth = 2;
-  ctx.fill(sprite.path);
-  ctx.stroke(sprite.path);
+  ctx.lineWidth = 3;
+  drawSpritePaths(sprite.basePaths);
+
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.fillStyle = '#e5e7eb';
+  ctx.strokeStyle = '#1f2937';
+  ctx.lineWidth = 3;
+  drawSpritePaths(sprite.basePaths);
+
+  ctx.fillStyle = '#d1d5db';
+  ctx.strokeStyle = '#1f2937';
+  ctx.lineWidth = 3;
+  drawSpritePaths(sprite.detailPaths);
   ctx.restore();
 
   if (f.selected) drawFurnitureSelection(f);
