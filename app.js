@@ -301,10 +301,17 @@ function parsePathFromSvg(svgText) {
   };
 }
 
+async function readSpriteText(file) {
+  if (window.electronAPI?.readTextAsset) {
+    return window.electronAPI.readTextAsset(file);
+  }
+  const res = await fetch(file);
+  return res.text();
+}
+
 async function loadSprites() {
   const entries = await Promise.all(Object.entries(SPRITE_FILES).map(async ([type, file]) => {
-    const res = await fetch(file);
-    const text = await res.text();
+    const text = await readSpriteText(file);
     const parsed = parsePathFromSvg(text);
     return [type, {
       basePaths: parsed.basePaths,

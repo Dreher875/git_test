@@ -20,10 +20,14 @@ This repository contains the **crime_scene** desktop application for crime scene
 
 ## Run as a desktop app
 
+No external web server is required. The renderer (`index.html` + `styles.css` + `app.js`) is loaded directly by Electron.
+
 ```bash
 npm install
-npm start
+npm run dev
 ```
+
+`npm run dev` opens a native Electron window and auto-reloads when source files change.
 
 ## Optional checks
 

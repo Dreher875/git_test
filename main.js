@@ -1,5 +1,17 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const electronReload = require('electron-reload');
+
+if (!app.isPackaged) {
+  electronReload(__dirname, {
+    electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+    hardResetMethod: 'exit',
+    awaitWriteFinish: {
+      stabilityThreshold: 150,
+      pollInterval: 100,
+    },
+  });
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -10,8 +22,10 @@ function createWindow() {
     autoHideMenuBar: true,
     title: 'crime_scene',
     webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      sandbox: true,
+      sandbox: false,
+      nodeIntegration: false,
     },
   });
 
