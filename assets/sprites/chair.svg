@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <path data-layer="base" d="M22 38h56a8 8 0 0 1 8 8v30a8 8 0 0 1-8 8H22a8 8 0 0 1-8-8V46a8 8 0 0 1 8-8z"/>
+  <path data-layer="detail" d="M28 18h44a8 8 0 0 1 8 8v16H20V26a8 8 0 0 1 8-8zM30 50h40v24H30z"/>
+</svg>

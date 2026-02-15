@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>crime_scene</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>crime_scene</h1>
+    <p>Diagram scenes with a ribbon-style workflow.</p>
+  </header>
+
+  <section class="ribbon" aria-label="Ribbon toolbar">
+    <div class="ribbon-tabs" role="tablist">
+      <button class="tab-btn" data-tab="file" role="tab" title="File tools">FILE</button>
+      <button class="tab-btn active" data-tab="draw" role="tab" title="Drawing tools">DRAW</button>
+      <button class="tab-btn" data-tab="measure" role="tab" title="Measurement tools">MEASURE</button>
+      <button class="tab-btn" data-tab="view" role="tab" title="View and scale settings">VIEW</button>
+      <button class="tab-btn" data-tab="evidence" role="tab" title="Evidence tools">EVIDENCE</button>
+      <button class="tab-btn" data-tab="manage" role="tab" title="Scene management tools">MANAGE</button>
+    </div>
+
+    <div class="ribbon-panels">
+      <div class="ribbon-panel" data-panel="file">
+        <div class="ribbon-group">
+          <button id="runExport" class="ribbon-tool" title="Export using selected format">
+            <svg viewBox="0 0 24 24"><path d="M12 3v10m0 0 4-4m-4 4-4-4M5 14v4h14v-4"/></svg>
+            <span>Export</span>
+          </button>
+          <label class="ribbon-field">Format
+            <select id="exportDropdown">
+              <option value="json">JSON</option>
+              <option value="png">PNG</option>
+            </select>
+          </label>
+        </div>
+        <div class="ribbon-group">
+          <button id="undoBtn" class="ribbon-tool" title="Undo (Ctrl/Cmd+Z)">
+            <svg viewBox="0 0 24 24"><path d="M9 7H4v5M4 12a8 8 0 1 0 2.3-5.7L4 8"/></svg>
+            <span>Undo</span>
+          </button>
+          <button id="redoBtn" class="ribbon-tool" title="Redo (Shift+Ctrl/Cmd+Z)">
+            <svg viewBox="0 0 24 24"><path d="M15 7h5v5M20 12a8 8 0 1 1-2.3-5.7L20 8"/></svg>
+            <span>Redo</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="ribbon-panel active" data-panel="draw">
+        <div class="ribbon-group">
+          <button data-tool="select" class="ribbon-tool tool-btn active" title="Select walls/evidence">
+            <svg viewBox="0 0 24 24"><path d="m4 4 7 16 2-6 6-2L4 4z"/></svg>
+            <span>Select</span>
+          </button>
+          <button data-tool="wall" class="ribbon-tool tool-btn" title="Draw wall">
+            <svg viewBox="0 0 24 24"><path d="M3 18h18M5 18V8h4v10m4 0V6h4v12"/></svg>
+            <span>Wall</span>
+          </button>
+          <label class="ribbon-field">Wall Mode
+            <select id="wallModeDropdown" title="Wall mode">
+              <option value="free">Free Wall</option>
+              <option value="straight">Straight Wall</option>
+            </select>
+          </label>
+          <button data-tool="room" class="ribbon-tool tool-btn" title="Draw rectangle room">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/></svg>
+            <span>Room</span>
+          </button>
+        </div>
+        <div class="ribbon-group">
+          <div class="group-stack">
+            <div class="group-title">Furniture</div>
+            <div class="group-row">
+              <button class="ribbon-tool furniture-btn" data-furniture="sofa" title="Place sofa">
+                <svg viewBox="0 0 24 24"><path d="M4 10h16v6H4zM5 8h14v2H5zM5 16v2M19 16v2"/></svg>
+                <span>Sofa</span>
+              </button>
+              <button class="ribbon-tool furniture-btn" data-furniture="bed" title="Place bed">
+                <svg viewBox="0 0 24 24"><path d="M4 8h16v8H4zM6 10h5v4H6M13 10h5v4h-5"/></svg>
+                <span>Bed</span>
+              </button>
+              <button class="ribbon-tool furniture-btn" data-furniture="chair" title="Place chair">
+                <svg viewBox="0 0 24 24"><path d="M7 7h10v4H7zM6 11h12v6H6zM8 17v2M16 17v2"/></svg>
+                <span>Chair</span>
+              </button>
+              <button class="ribbon-tool furniture-btn" data-furniture="table_rect" title="Place rectangular table">
+                <svg viewBox="0 0 24 24"><path d="M5 7h14v8H5zM8 15v2M16 15v2"/></svg>
+                <span>Rect Table</span>
+              </button>
+              <button class="ribbon-tool furniture-btn" data-furniture="table_round" title="Place round table">
+                <svg viewBox="0 0 24 24"><path d="M12 6a5 5 0 1 1 0 10a5 5 0 1 1 0-10M11 16h2v2h-2"/></svg>
+                <span>Round Table</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="ribbon-group">
+          <button id="toggleSnapGrid" class="ribbon-tool icon-toggle" title="Toggle snap to grid">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM4 12h16M12 4v16"/></svg>
+            <span>Snap Grid</span>
+          </button>
+          <button id="toggleSnapWalls" class="ribbon-tool icon-toggle" title="Toggle snap to walls">
+            <svg viewBox="0 0 24 24"><path d="M4 18 10 6l4 12 6-10"/></svg>
+            <span>Snap Walls</span>
+          </button>
+          <button id="toggleOrtho" class="ribbon-tool icon-toggle" title="Toggle ortho constraint">
+            <svg viewBox="0 0 24 24"><path d="M4 4v16h16M4 14h10V4"/></svg>
+            <span>Ortho</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="ribbon-panel" data-panel="measure">
+        <div class="ribbon-group">
+          <button data-tool="measure" class="ribbon-tool tool-btn" title="Measure distance">
+            <svg viewBox="0 0 24 24"><path d="M3 16 16 3l5 5L8 21H3zM11 8l5 5"/></svg>
+            <span>Measure</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="ribbon-panel" data-panel="view">
+        <div class="ribbon-group">
+          <label class="ribbon-field">Scale
+            <select id="scalePreset" title="Scene scale">
+              <option value="6in">1 sq = 6 inches</option>
+              <option value="1ft" selected>1 sq = 1 foot</option>
+              <option value="2ft">1 sq = 2 feet</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <div id="customScaleWrap" class="inline-row hidden">
+            <input id="customScaleValue" type="number" min="0.1" step="0.1" value="1" title="Custom scale value" />
+            <select id="customScaleUnit" title="Custom scale unit">
+              <option value="in">inches</option>
+              <option value="ft" selected>feet</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="ribbon-panel" data-panel="evidence">
+        <div class="ribbon-group">
+          <button data-tool="evidence" class="ribbon-tool tool-btn" title="Place evidence marker">
+            <svg viewBox="0 0 24 24"><path d="M12 3 3 8v8l9 5 9-5V8l-9-5z"/></svg>
+            <span>Evidence</span>
+          </button>
+          <button id="saveEvidence" class="ribbon-tool" title="Save selected evidence details">
+            <svg viewBox="0 0 24 24"><path d="M5 4h12l2 2v14H5zM8 4v6h8V4"/></svg>
+            <span>Save Evidence</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="ribbon-panel" data-panel="manage">
+        <div class="ribbon-group">
+          <button id="createOffsetWall" class="ribbon-tool" title="Create parallel wall from selected wall">
+            <svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16M7 5v6M17 13v6"/></svg>
+            <span>Offset Wall</span>
+          </button>
+          <button id="clearScene" class="ribbon-tool danger" title="Clear all walls, evidence, and measurements">
+            <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg>
+            <span>Clear Scene</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <aside class="panel">
+      <h2>Case Info</h2>
+      <label>Case Number <input id="caseNumber" placeholder="2026-001" /></label>
+      <label>Scene Name <input id="sceneName" placeholder="Living Room" /></label>
+
+      <h2>Selected Evidence</h2>
+      <label>Evidence ID <input id="evidenceId" placeholder="E-01" /></label>
+      <label>Notes <textarea id="evidenceNotes" rows="3" placeholder="Description..."></textarea></label>
+
+      <h2>Wall Properties</h2>
+      <div id="wallPropertiesEmpty" class="muted">Select a wall to edit properties.</div>
+      <div id="wallPropertiesPanel" class="hidden">
+        <label>Length <input id="wallLength" readonly /></label>
+        <label>Angle <input id="wallAngle" readonly /></label>
+        <label>Thickness (px) <input id="wallThickness" type="number" min="1" value="4" /></label>
+        <label>Label <input id="wallLabel" placeholder="W1" /></label>
+        <label>
+          Type
+          <select id="wallType">
+            <option value="interior">Interior</option>
+            <option value="exterior">Exterior</option>
+          </select>
+        </label>
+        <button id="saveWallProperties">Save Wall Properties</button>
+      </div>
+
+      <h2>Offset / Parallel Wall</h2>
+      <label>Offset distance (scene units) <input id="offsetDistance" type="number" min="0.1" step="0.1" value="12" /></label>
+    </aside>
+
+    <section class="canvas-wrap">
+      <canvas id="sceneCanvas" width="1200" height="760" aria-label="Crime scene diagram canvas"></canvas>
+      <div id="status">Tool: Select</div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
